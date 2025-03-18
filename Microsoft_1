@@ -1,0 +1,79 @@
+import folium
+import geopy.distance
+import time
+from folium.plugins import AntPath
+
+# Create first map
+my_map1 = folium.Map(location=[51.0, 2.0], zoom_start=5, control_scale=True)
+my_map1.get_root().html.add_child(folium.Element("""
+    <h1 style='position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; background: white; padding: 15px; border-radius: 5px; font-size: 24px; font-weight: bold; text-align: center;'>
+         Based on Latency
+        <br>
+        <span style='font-size: 18px; font-weight: normal; color: gray;'>Lon  are the best Azure regions</span>
+        <br>
+        <span style='font-size: 18px; font-weight: normal; color: gray;'>performance</span>
+    </h1>
+"""))
+
+# Create second map
+my_map2 = folium.Map(location=[51.0, 2.0], zoom_start=5, control_scale=True)
+
+# Geographic coordinates
+locations = {
+    "latenc1": (51.507, -0.589),
+    "latency2": (51.127, -0.016),
+    "Equinix-LD5 [azure_uk_south]": (51.505, -0.089),
+    "Equinix-LD10 [azure_uk_south]": (51.506, -0.088),
+    "Equinix-AM3 [Azure_West_Europe]": (52.3547, 4.9613),
+    "Equinix-AM5 [Azure_West_Europe]": (52.2938, 4.9457),
+}
+
+# Latency data for first map
+latency_data_1 = {
+    ("latency1", "Equinix-LD5 [azure_uk_south]", "zscaler_london3", "blue"): (10, 5),
+    ("latency1", "Equinix-LD10 [azure_uk_south]", "zscaler_london3", "green"): (12, 6),
+    ("latency 1", "Equinix-LD5 [azure_uk_south]", "zscaler_manchester", "yellow"): (15, 7),
+    ("latency1", "Equinix-LD10 [azure_uk_south]", "zscaler_manchester", "black"): (17, 8),
+}
+
+# Latency data for second map
+latency_data_2 = {
+    ("latency1", "Equinix-LD5 [azure_uk_south]", "blue"): (10, 5),
+    ("latency1", "Equinix-LD10 [azure_uk_south]", "green"): (12, 6),
+    ("latency1", "Equinix-AM3 [Azure_West_Europe]", "red"): (25, 12),
+    ("latency1", "Equinix-AM5 [Azure_West_Europe]", "purple"): (27, 13),
+    ("latency2", "Equinix-LD5 [azure_uk_south]", "blue"): (10, 5),
+    ("latency2", "Equinix-LD10 [azure_uk_south]", "green"): (12, 6),
+    ("latency2", "Equinix-AM3 [Azure_West_Europe]", "red"): (25, 12),
+    ("latency2", "Equinix-AM5 [Azure_West_Europe]", "purple"): (27, 13),
+}
+
+# Function to add paths to first map
+def add_path_to_map1(map_obj, source, intermediate, destination, source_name, intermediate_name, destination_name, latency1, latency2, color):
+    path = [source, intermediate, destination]
+    folium.PolyLine(path, color=color, weight=3, tooltip=f"Latency: {latency1 + latency2} ms").add_to(map_obj)
+    AntPath(path, delay=400, weight=5, color=color).add_to(map_obj)
+    folium.Marker(location=destination, popup=f'<b>{destination_name}</b><br>Latency: {latency1 + latency2} ms', icon=folium.Icon(color="red")).add_to(map_obj)
+    folium.Marker(location=source, popup=f'<b>Source: {source_name}</b>', icon=folium.Icon(color="blue")).add_to(map_obj)
+    folium.Marker(location=intermediate, popup=f'<b>Intermediate: {intermediate_name}</b>', icon=folium.Icon(color="green")).add_to(map_obj)
+
+# Function to add paths to second map
+def add_path_to_map2(map_obj, source, destination, source_name, destination_name, latency1, latency2, color):
+    path = [source, destination]
+    folium.PolyLine(path, color=color, weight=3, tooltip=f"Latency: {latency1 + latency2} ms").add_to(map_obj)
+    AntPath(path, delay=400, weight=5, color=color).add_to(map_obj)
+    folium.Marker(location=destination, popup=f'<b>{destination_name}</b><br>Latency: {latency1 + latency2} ms', icon=folium.Icon(color="red")).add_to(map_obj)
+    folium.Marker(location=source, popup=f'<b>Source: {source_name}</b>', icon=folium.Icon(color="blue")).add_to(map_obj)
+
+# Adding paths to first map
+for (source_name, intermediate_name, destination_name, color), (latency1, latency2) in latency_data_1.items():
+    add_path_to_map1(my_map1, locations[source_name], locations[intermediate_name], locations[destination_name], source_name, intermediate_name, destination_name, latency1, latency2, color)
+
+# Adding paths to second map
+for (source_name, destination_name, color), (latency1, latency2) in latency_data_2.items():
+    add_path_to_map2(my_map2, locations[source_name], locations[destination_name], source_name, destination_name, latency1, latency2, color)
+
+# Save both maps
+my_map1.save("animated_latency_map1.html")
+my_map2.save("animated_latency_map2.html")
+print("Animated latency maps saved as animated_latency_map1.html and animated_latency_map2.html")
